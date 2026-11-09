@@ -48,8 +48,10 @@ export function CustomerShell({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [pathname]);
+    const openDialog = () => setAddressOpen(true);
+    window.addEventListener("doybi:open-address", openDialog);
+    return () => window.removeEventListener("doybi:open-address", openDialog);
+  }, []);
 
   const openAddressDialog = () => {
     if (address) {
@@ -152,9 +154,9 @@ export function CustomerShell({ children }: { children: ReactNode }) {
 
         {mobileMenuOpen && (
           <nav className="customer-mobile-menu-panel">
-            <Link href="/giris">Giriş yap</Link>
-            <Link href="/kayit">Hesap oluştur</Link>
-            <Link href="/siparislerim">Demo siparişlerim</Link>
+            <Link href="/giris" onClick={() => setMobileMenuOpen(false)}>Giriş yap</Link>
+            <Link href="/kayit" onClick={() => setMobileMenuOpen(false)}>Hesap oluştur</Link>
+            <Link href="/siparislerim" onClick={() => setMobileMenuOpen(false)}>Demo siparişlerim</Link>
           </nav>
         )}
       </header>
@@ -168,7 +170,6 @@ export function CustomerShell({ children }: { children: ReactNode }) {
           </Link>
           <p>Acıktın mı? Doybi&apos;ye bak!</p>
           <span className="demo-disclaimer">Demo deneyimidir · Gerçek sipariş alınmaz</span>
-          <Link href="/partner" className="customer-partner-link">Restoran mısın? DOYBİ Partner</Link>
         </div>
       </footer>
 

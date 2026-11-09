@@ -1,6 +1,0 @@
-import {create} from 'zustand';
-export type OrderStatus='Yeni sipariş'|'Kabul edildi'|'Hazırlanıyor'|'Kuryeye verildi'|'Teslim edildi'|'İptal edildi';
-export type Order={id:string;customer:string;items:string[];total:number;payment:string;address:string;status:OrderStatus};
-const stages:OrderStatus[]=['Yeni sipariş','Kabul edildi','Hazırlanıyor','Kuryeye verildi','Teslim edildi'];
-type State={orders:Order[];advance:(id:string)=>void;cancel:(id:string)=>void};
-export const useOrderStore=create<State>(set=>({orders:[{id:'#1048',customer:'Ayşe Y.',items:['1× Adana Kebap','1× Kola'],total:450,payment:'Online ödeme',address:'Süleymanpaşa • 1,8 km',status:'Yeni sipariş'},{id:'#1047',customer:'Mert K.',items:['2× Mercimek Çorbası','1× Çöp Şiş'],total:940,payment:'Kapıda kart',address:'Süleymanpaşa • 2,4 km',status:'Hazırlanıyor'},{id:'#1046',customer:'Selin A.',items:['1× Tavuk Suyu Çorbası'],total:120,payment:'Online ödeme',address:'Süleymanpaşa • 0,9 km',status:'Kuryeye verildi'}],advance:id=>set(s=>({orders:s.orders.map(o=>{if(o.id!==id)return o;const i=stages.indexOf(o.status);return {...o,status:stages[Math.min(i+1,stages.length-1)]}})})),cancel:id=>set(s=>({orders:s.orders.map(o=>o.id===id?{...o,status:'İptal edildi'}:o)}))}));

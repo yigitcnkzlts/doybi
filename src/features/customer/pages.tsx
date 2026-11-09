@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import {
   ArrowLeft,
   ArrowRight,
@@ -14,7 +14,6 @@ import {
   ChevronRight,
   Clock3,
   CreditCard,
-  Flame,
   Info,
   MapPin,
   Minus,
@@ -28,7 +27,7 @@ import {
   UtensilsCrossed,
   X,
 } from "lucide-react";
-import { getDeliveryZone, getRestaurantStatus, neighborhoods, restaurantById, restaurantBySlug, restaurants } from "@/data/restaurants";
+import { getDeliveryZone, getRestaurantStatus, restaurantById, restaurantBySlug, restaurants } from "@/data/restaurants";
 import { DemoNotice } from "@/components/customer/shell";
 import { useCustomerStore } from "@/features/customer/store";
 import type {
@@ -260,8 +259,8 @@ function ProductDialog({
   const [replacePrompt, setReplacePrompt] = useState(false);
 
   const selectedPrice = selected.reduce((sum, option) => sum + option.priceCents, 0);
-  const item: CartItem = {
-    id: `${product.id}-${Date.now()}`,
+  const createItem = (): CartItem => ({
+    id: crypto.randomUUID(),
     restaurantId: restaurant.id,
     menuItemId: product.id,
     name: product.name,
@@ -270,15 +269,15 @@ function ProductDialog({
     quantity,
     options: selected,
     note: note.trim(),
-  };
+  });
 
   const addToCart = () => {
-    if (!addItem(item)) setReplacePrompt(true);
+    if (!addItem(createItem())) setReplacePrompt(true);
     else onClose();
   };
 
   const replaceExistingCart = () => {
-    replaceCartWith(item);
+    replaceCartWith(createItem());
     setReplacePrompt(false);
     onClose();
   };
@@ -433,6 +432,7 @@ export function CartPage() {
   const setQuantity = useCustomerStore((state) => state.setQuantity);
   const removeItem = useCustomerStore((state) => state.removeItem);
   const restaurant = cart[0] ? restaurantById(cart[0].restaurantId) : undefined;
+  const restaurantStatus = restaurant ? getRestaurantStatus(restaurant) : "CLOSED";
   const address = useCustomerStore((state) => state.address);
   const zone = restaurant && address ? getDeliveryZone(restaurant, address.neighborhood) : undefined;
   const subtotal = cart.reduce((sum, item) => sum + (item.unitPriceCents + item.options.reduce((optionSum, option) => optionSum + option.priceCents, 0)) * item.quantity, 0);
@@ -481,8 +481,9 @@ export function CartPage() {
           <div className="summary-divider" />
           <div className="summary-row summary-total"><span>Toplam</span><strong>{money(subtotal + deliveryFee)}</strong></div>
           {!zone && <p className="summary-error">Bu restorana uygun teslimat adresi seçmelisin.</p>}
+          {restaurantStatus !== "OPEN" && <p className="summary-error">Restoran şu anda sipariş almıyor.</p>}
           {restaurant && !minimumReached && <p className="summary-hint">Minimum sipariş {money(restaurant.minimumOrderCents)}. Devam etmek için {money(restaurant.minimumOrderCents - subtotal)} daha ekle.</p>}
-          {minimumReached && zone && <Link className="customer-button customer-button-primary customer-button-wide" href="/odeme">Siparişi tamamla <ArrowRight size={16} /></Link>}
+          {minimumReached && zone && restaurantStatus === "OPEN" && <Link className="customer-button customer-button-primary customer-button-wide" href="/odeme">Siparişi tamamla <ArrowRight size={16} /></Link>}
           <div className="summary-secure"><ShieldCheck size={15} /> Ödeme alınmaz · Demo akışıdır</div>
         </aside>
       </div>
@@ -604,12 +605,14 @@ export function CheckoutPage() {
   const address = useCustomerStore((state) => state.address);
   const placeDemoOrder = useCustomerStore((state) => state.placeDemoOrder);
   const restaurant = cart[0] ? restaurantById(cart[0].restaurantId) : undefined;
+  const restaurantStatus = restaurant ? getRestaurantStatus(restaurant) : "CLOSED";
   const zone = restaurant && address ? getDeliveryZone(restaurant, address.neighborhood) : undefined;
   const subtotal = cart.reduce((sum, item) => sum + (item.unitPriceCents + item.options.reduce((optionSum, option) => optionSum + option.priceCents, 0)) * item.quantity, 0);
   const form = useForm<CheckoutValues>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: { phone: "", note: "", paymentMethod: restaurant?.paymentMethods[0] ?? "CASH_ON_DELIVERY" },
   });
+  const selectedPaymentMethod = useWatch({ control: form.control, name: "paymentMethod" });
 
   if (!cart.length || !restaurant) {
     return <section className="customer-container empty-cart-page"><span className="empty-cart-icon"><ShoppingBag size={31} /></span><h1>Önce sepetine ürün ekle</h1><p>Demo sipariş akışına geçmek için bir restoran seç.</p><Link className="customer-button customer-button-primary" href="/restoranlar">Restoranları keşfet <ArrowRight size={17} /></Link></section>;
@@ -620,8 +623,15 @@ export function CheckoutPage() {
   if (subtotal < restaurant.minimumOrderCents) {
     return <section className="customer-container empty-cart-page"><span className="empty-cart-icon"><ShoppingBag size={31} /></span><h1>Minimum sipariş tutarına ulaşmadın</h1><p>Devam etmek için {money(restaurant.minimumOrderCents - subtotal)} tutarında ürün daha ekle.</p><Link className="customer-button customer-button-primary" href={`/restoran/${restaurant.slug}`}>Menüye dön <ArrowRight size={17} /></Link></section>;
   }
+  if (restaurantStatus !== "OPEN") {
+    return <section className="customer-container empty-cart-page"><span className="empty-cart-icon"><Clock3 size={31} /></span><h1>Restoran şu anda sipariş almıyor</h1><p>Menüyü daha sonra tekrar kontrol edebilir veya açık restoranları keşfedebilirsin.</p><Link className="customer-button customer-button-primary" href="/restoranlar">Açık restoranları gör <ArrowRight size={17} /></Link></section>;
+  }
 
   const submit = form.handleSubmit((values) => {
+    if (getRestaurantStatus(restaurant) !== "OPEN") {
+      form.setError("root", { message: "Restoran şu anda sipariş almıyor. Sepetin korunuyor." });
+      return;
+    }
     const orderId = placeDemoOrder({
       restaurantId: restaurant.id,
       restaurantName: restaurant.name,
@@ -661,11 +671,12 @@ export function CheckoutPage() {
                 <input type="radio" value={method} {...form.register("paymentMethod")} />
                 <span className="payment-icon"><CreditCard size={19} /></span>
                 <span>{method === "CASH_ON_DELIVERY" ? "Kapıda nakit" : "Kapıda kart"}</span>
-                {form.watch("paymentMethod") === method && <CheckCircle2 className="payment-selected" size={18} />}
+                {selectedPaymentMethod === method && <CheckCircle2 className="payment-selected" size={18} />}
               </label>
             ))}
           </section>
           <div className="checkout-demo-warning"><Info size={18} /><p><strong>Önemli:</strong> Bu işlem demo amaçlıdır. Gerçek sipariş oluşturulmaz, ödeme alınmaz ve restoranla iletişime geçilmez.</p></div>
+          {form.formState.errors.root && <p className="summary-error">{form.formState.errors.root.message}</p>}
           <button className="customer-button customer-button-primary customer-button-wide checkout-submit" type="submit">Demo sipariş akışını tamamla · {money(subtotal + zone.deliveryFeeCents)} <ArrowRight size={17} /></button>
         </form>
         <aside className="order-summary checkout-summary">

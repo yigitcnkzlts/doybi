@@ -1,2 +1,0 @@
-export type PartnerApplicationPayload={restaurantName:string;contactName:string;phone:string;email:string;province:string;district:string;address:string;businessType:string;hasCourier:'yes'|'no';kvkk:boolean;contactConsent:boolean};
-export async function submitPartnerApplication(payload:PartnerApplicationPayload){await new Promise(r=>setTimeout(r,650));return {demo:true,payload,reference:`DEMO-${Date.now()}`};}
