@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+:root { --green:#16a34a; --green-dark:#166534; --cream:#fafaf7; --ink:#17211b; --amber:#f59e0b; }
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { margin:0; background:var(--cream); color:var(--ink); font-family:Arial, Helvetica, sans-serif; }
+button,a,input,select,textarea { font:inherit; }
+button,a { -webkit-tap-highlight-color:transparent; }
+.container { width:min(1180px, calc(100% - 32px)); margin-inline:auto; }
+.eyebrow { display:inline-flex; align-items:center; gap:.45rem; color:var(--green-dark); font-size:.78rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+.section-title { margin:.65rem 0 0; font-size:clamp(2rem,4vw,3.5rem); line-height:1.03; letter-spacing:-.045em; }
+.glass { background:rgba(255,255,255,.82); border:1px solid rgba(22,101,52,.12); box-shadow:0 22px 60px rgba(23,33,27,.08); backdrop-filter:blur(14px); }
+.grid-dots { background-image:radial-gradient(rgba(22,101,52,.14) 1px,transparent 1px); background-size:22px 22px; }
+.focusable:focus-visible, button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline:3px solid rgba(245,158,11,.55); outline-offset:2px; }
+@media (max-width: 760px) { .container{width:min(100% - 24px,1180px)} }

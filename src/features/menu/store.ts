@@ -1,0 +1,4 @@
+import {create} from 'zustand';
+export type MenuItem={id:number;name:string;price:number;category:string;active:boolean};
+type State={items:MenuItem[];categories:string[];add:(item:Omit<MenuItem,'id'|'active'>)=>void;update:(id:number,patch:Partial<MenuItem>)=>void;addCategory:(name:string)=>void};
+export const useMenuStore=create<State>(set=>({items:[['Adana Kebap',400,'Izgaralar'],['Yarım Çorba',80,'Çorbalar'],['Tavuk Suyu Çorbası',120,'Çorbalar'],['Mercimek Çorbası',120,'Çorbalar'],['Çöp Şiş',700,'Izgaralar'],['Kola',50,'İçecekler']].map((x,i)=>({id:i+1,name:x[0] as string,price:x[1] as number,category:x[2] as string,active:true})),categories:['Izgaralar','Çorbalar','İçecekler'],add:item=>set(s=>({items:[...s.items,{...item,id:Date.now(),active:true}]})),update:(id,patch)=>set(s=>({items:s.items.map(i=>i.id===id?{...i,...patch}:i)})),addCategory:name=>set(s=>s.categories.includes(name)?s:{categories:[...s.categories,name]} as Partial<State>)}));
