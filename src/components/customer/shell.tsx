@@ -10,12 +10,14 @@ import {
   MapPin,
   Menu,
   Search,
+  ShieldCheck,
   ShoppingBag,
   UserRound,
   Utensils,
   X,
 } from "lucide-react";
 import { neighborhoods } from "@/data/restaurants";
+import { isDemoPreviewEnabled, useDemoPreview, disableDemoPreview } from "@/features/customer/demo-preview";
 import { useCustomerStore } from "@/features/customer/store";
 import type { CustomerAddress } from "@/types/customer";
 
@@ -42,6 +44,16 @@ export function CustomerShell({ children }: { children: ReactNode }) {
   const setAddress = useCustomerStore((state) => state.setAddress);
   const pathname = usePathname();
   const router = useRouter();
+  const demoPreviewEnabled = useDemoPreview();
+  const isWelcomePage = pathname === "/";
+  const isProtectedRoute =
+    pathname === "/restoranlar" ||
+    pathname.startsWith("/restoran/") ||
+    pathname === "/sepet" ||
+    pathname === "/odeme" ||
+    pathname === "/siparislerim" ||
+    pathname === "/hesabim";
+  const showStoreControls = demoPreviewEnabled && pathname !== "/" && pathname !== "/giris" && pathname !== "/kayit";
 
   useEffect(() => {
     void useCustomerStore.persist.rehydrate();
@@ -52,6 +64,12 @@ export function CustomerShell({ children }: { children: ReactNode }) {
     window.addEventListener("doybi:open-address", openDialog);
     return () => window.removeEventListener("doybi:open-address", openDialog);
   }, []);
+
+  useEffect(() => {
+    if (isProtectedRoute && !isDemoPreviewEnabled()) {
+      router.replace(`/giris?next=${encodeURIComponent(pathname)}`);
+    }
+  }, [isProtectedRoute, pathname, router]);
 
   const openAddressDialog = () => {
     if (address) {
@@ -87,40 +105,46 @@ export function CustomerShell({ children }: { children: ReactNode }) {
 
   return (
     <>
-      <header className="customer-header">
+      <header className={`customer-header ${isWelcomePage ? "customer-header-welcome" : ""}`}>
         <div className="customer-header-main customer-container">
           <Link className="customer-brand" href="/" aria-label="DOYBİ ana sayfa">
             <span className="customer-brand-mark">d.</span>
             <span>DOYBİ</span>
           </Link>
 
-          <button className="customer-address-button desktop-address" onClick={openAddressDialog} type="button">
-            <span className="customer-address-pin"><MapPin size={17} /></span>
-            <span className="customer-address-copy">
-              <small>Teslimat adresin</small>
-              <strong>{address ? `${address.neighborhood}, Süleymanpaşa` : "Adresini seç"}</strong>
-            </span>
-            <ChevronDown size={16} />
-          </button>
+          {showStoreControls ? (
+            <button className="customer-address-button desktop-address" onClick={openAddressDialog} type="button">
+              <span className="customer-address-pin"><MapPin size={17} /></span>
+              <span className="customer-address-copy">
+                <small>Teslimat adresin</small>
+                <strong>{address ? `${address.neighborhood}, Süleymanpaşa` : "Adresini seç"}</strong>
+              </span>
+              <ChevronDown size={16} />
+            </button>
+          ) : null}
 
-          <form className="customer-search desktop-search" onSubmit={search} role="search">
-            <Search size={18} />
-            <input
-              aria-label="Restoran veya yemek ara"
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Restoran veya yemek ara"
-              value={query}
-            />
-            <button type="submit" aria-label="Ara"><ArrowDown className="search-enter-icon" size={16} /></button>
-          </form>
+          {showStoreControls ? (
+            <form className="customer-search desktop-search" onSubmit={search} role="search">
+              <Search size={18} />
+              <input
+                aria-label="Restoran veya yemek ara"
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Restoran veya yemek ara"
+                value={query}
+              />
+              <button type="submit" aria-label="Ara"><ArrowDown className="search-enter-icon" size={16} /></button>
+            </form>
+          ) : null}
 
           <div className="customer-header-actions">
             <Link className="customer-login-link" href="/giris">Giriş yap</Link>
             <Link className="customer-signup-link" href="/kayit">Kayıt ol</Link>
-            <Link className="customer-cart-link" href="/sepet" aria-label={`Sepetim, ${cartCount} ürün`}>
-              <ShoppingBag size={19} /><span>Sepetim</span>
-              {cartCount > 0 && <b>{cartCount}</b>}
-            </Link>
+            {showStoreControls ? (
+              <Link className="customer-cart-link" href="/sepet" aria-label={`Sepetim, ${cartCount} ürün`}>
+                <ShoppingBag size={19} /><span>Sepetim</span>
+                {cartCount > 0 && <b>{cartCount}</b>}
+              </Link>
+            ) : null}
           </div>
 
           <button
@@ -134,23 +158,25 @@ export function CustomerShell({ children }: { children: ReactNode }) {
           </button>
         </div>
 
-        <div className="customer-mobile-controls">
-          <button className="customer-address-button" onClick={openAddressDialog} type="button">
-            <MapPin size={17} />
-            <span>{address ? `${address.neighborhood}, Süleymanpaşa` : "Teslimat adresini seç"}</span>
-            <ChevronDown size={15} />
-          </button>
-          <form className="customer-search" onSubmit={search} role="search">
-            <Search size={18} />
-            <input
-              aria-label="Restoran veya yemek ara"
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Ne yemek istersin?"
-              value={query}
-            />
-            <button type="submit" aria-label="Ara"><Search size={17} /></button>
-          </form>
-        </div>
+        {showStoreControls ? (
+          <div className="customer-mobile-controls">
+            <button className="customer-address-button" onClick={openAddressDialog} type="button">
+              <MapPin size={17} />
+              <span>{address ? `${address.neighborhood}, Süleymanpaşa` : "Teslimat adresini seç"}</span>
+              <ChevronDown size={15} />
+            </button>
+            <form className="customer-search" onSubmit={search} role="search">
+              <Search size={18} />
+              <input
+                aria-label="Restoran veya yemek ara"
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Ne yemek istersin?"
+                value={query}
+              />
+              <button type="submit" aria-label="Ara"><Search size={17} /></button>
+            </form>
+          </div>
+        ) : null}
 
         {mobileMenuOpen && (
           <nav className="customer-mobile-menu-panel">
@@ -161,7 +187,29 @@ export function CustomerShell({ children }: { children: ReactNode }) {
         )}
       </header>
 
-      <main className="customer-main">{children}</main>
+      {demoPreviewEnabled && isProtectedRoute ? (
+        <aside className="demo-preview-banner">
+          <span><strong>Demo önizleme</strong> · Gerçek müşteri oturumu yok; tüm restoran ve sipariş verileri örnektir.</span>
+          <button
+            onClick={() => {
+              disableDemoPreview();
+              router.replace("/");
+            }}
+            type="button"
+          >
+            Önizlemeden çık
+          </button>
+        </aside>
+      ) : null}
+
+      <main className="customer-main">
+        {isProtectedRoute && !demoPreviewEnabled ? (
+          <section aria-live="polite" className="customer-access-pending">
+            <span className="customer-modal-icon"><ShieldCheck size={21} /></span>
+            <p>Bu bölüm müşteri girişi gerektirir.</p>
+          </section>
+        ) : children}
+      </main>
 
       <footer className="customer-footer">
         <div className="customer-container customer-footer-inner">
@@ -173,14 +221,16 @@ export function CustomerShell({ children }: { children: ReactNode }) {
         </div>
       </footer>
 
-      <nav className="customer-bottom-nav" aria-label="Alt menü">
-        {navigation.map(({ href, label, icon: Icon }) => (
-          <Link className={pathname === href ? "active" : ""} href={href} key={href}>
-            <Icon size={20} strokeWidth={pathname === href ? 2.4 : 1.8} /><span>{label}</span>
-            {href === "/sepet" && cartCount > 0 && <b>{cartCount}</b>}
-          </Link>
-        ))}
-      </nav>
+      {showStoreControls ? (
+        <nav className="customer-bottom-nav" aria-label="Alt menü">
+          {navigation.map(({ href, label, icon: Icon }) => (
+            <Link className={pathname === href ? "active" : ""} href={href} key={href}>
+              <Icon size={20} strokeWidth={pathname === href ? 2.4 : 1.8} /><span>{label}</span>
+              {href === "/sepet" && cartCount > 0 && <b>{cartCount}</b>}
+            </Link>
+          ))}
+        </nav>
+      ) : null}
 
       {addressOpen && (
         <div className="customer-modal-backdrop" onMouseDown={(event) => {

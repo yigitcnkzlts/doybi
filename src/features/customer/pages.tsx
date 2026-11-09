@@ -14,6 +14,8 @@ import {
   ChevronRight,
   Clock3,
   CreditCard,
+  Eye,
+  EyeOff,
   Info,
   MapPin,
   Minus,
@@ -29,7 +31,9 @@ import {
 } from "lucide-react";
 import { getDeliveryZone, getRestaurantStatus, restaurantById, restaurantBySlug, restaurants } from "@/data/restaurants";
 import { DemoNotice } from "@/components/customer/shell";
+import { enableDemoPreview } from "@/features/customer/demo-preview";
 import { useCustomerStore } from "@/features/customer/store";
+import { customerAuthService } from "@/services/customer-auth";
 import type {
   CartItem,
   MenuItem,
@@ -92,67 +96,38 @@ function RestaurantGrid({ list }: { list: Restaurant[] }) {
 }
 
 export function HomePage() {
-  const address = useCustomerStore((state) => state.address);
-  const featured = restaurants.filter((restaurant) => getRestaurantStatus(restaurant) !== "HIDDEN").slice(0, 4);
-
   return (
-    <>
-      <section className="customer-hero">
-        <div className="customer-container customer-hero-grid">
-          <div className="customer-hero-copy">
-            <span className="customer-kicker"><span className="hero-kicker-dot" /> Tekirdağ Süleymanpaşa&apos;da</span>
-            <h1>Acıktın mı?<br /><span>Doybi&apos;ye bak!</span></h1>
-            <p>Mahallendeki lezzetleri keşfet, canın ne çekiyorsa kapına gelsin.</p>
-            <div className="hero-buttons">
-              <Link className="customer-button customer-button-dark" href="/restoranlar">Restoranları keşfet <ArrowRight size={17} /></Link>
-              <a className="hero-location-link" href="#mahalleler"><MapPin size={16} /> {address?.neighborhood ?? "Mahalleni seç"}</a>
-            </div>
-            <div className="hero-trust"><span><Check size={14} /> Kendi kuryeleriyle teslimat</span><span><Check size={14} /> Şeffaf fiyatlar</span></div>
+    <section className="welcome-page">
+      <div className="customer-container welcome-grid">
+        <div className="welcome-copy">
+          <span className="welcome-logo"><span className="customer-brand-mark">d.</span> DOYBİ</span>
+          <span className="customer-kicker"><span className="hero-kicker-dot" /> Lezzetli bir başlangıç</span>
+          <h1>Acıktın mı?<br /><span>Doybi&apos;ye bak!</span></h1>
+          <p>Sevdiğin lezzetler, avantajlı fiyatlarla kapında. DOYBİ&apos;ye katıl, restoranları keşfet ve siparişini kolayca oluştur.</p>
+          <div className="welcome-actions">
+            <Link className="customer-button customer-button-dark" href="/giris">Giriş Yap <ArrowRight size={17} /></Link>
+            <Link className="customer-button customer-button-primary" href="/kayit">Ücretsiz Kayıt Ol</Link>
           </div>
-          <div className="customer-hero-art" aria-label="Özenle hazırlanmış yemek tabağı" role="img">
-            <div className="hero-art-orbit hero-art-orbit-one" />
-            <div className="hero-art-orbit hero-art-orbit-two" />
-            <div className="hero-food-image" />
-            <div className="hero-art-sticker"><span>Mahallenden</span><strong>taptaze<br />lezzetler</strong><span>♥</span></div>
-            <div className="hero-floating-card"><span className="hero-floating-icon"><Truck size={18} /></span><span><strong>Kapına kadar</strong><small>Mahallenden, özenle</small></span></div>
-            <span className="hero-sparkle sparkle-one">✳</span><span className="hero-sparkle sparkle-two">✦</span>
+          <span className="welcome-privacy"><ShieldCheck size={15} /> Hesap bilgilerin backend bağlanana kadar işlenmez.</span>
+        </div>
+        <div className="welcome-visual" aria-label="Yemek ve restoran kartları örnek görünümü" role="img">
+          <div className="welcome-visual-glow" />
+          <div className="welcome-plate" />
+          <div className="welcome-photo-card"><span>GÜNÜN LEZZETİ</span><strong>Özenle hazırlandı</strong></div>
+          <div className="welcome-restaurant-card">
+            <span className="welcome-restaurant-thumb" />
+            <span><strong>Mahallenden lezzetler</strong><small>Demo önizleme · Giriş sonrası</small></span>
+            <span className="welcome-rating"><Star size={12} fill="currentColor" /> 4.8</span>
           </div>
+          <span className="welcome-floating-icon welcome-floating-one">✳</span>
+          <span className="welcome-floating-icon welcome-floating-two">✦</span>
+          <div className="welcome-demo-tag"><span /> Örnek görseller</div>
         </div>
-        <div className="customer-container"><DemoNotice /></div>
-      </section>
-
-      <section className="customer-section customer-container" id="mahalleler">
-        <div className="section-heading">
-          <div><span className="customer-kicker">Canın hangisini çekti?</span><h2>Bugün ne yesek?</h2></div>
-          <Link className="text-link" href="/restoranlar">Tüm kategoriler <ArrowRight size={16} /></Link>
-        </div>
-        <div className="category-strip">
-          {categoryLinks.map((category, index) => (
-            <Link className="category-tile" href={`/restoranlar?kategori=${encodeURIComponent(category.name)}`} key={category.name}>
-              <span className={`category-emoji category-color-${index % 5}`}>{category.emoji}</span>
-              <strong>{category.name}</strong>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="customer-section customer-container customer-featured-section">
-        <div className="section-heading">
-          <div><span className="customer-kicker">Mahallenden seçtik</span><h2>Öne çıkan restoranlar</h2></div>
-          <Link className="text-link" href="/restoranlar">Hepsini gör <ArrowRight size={16} /></Link>
-        </div>
-        <RestaurantGrid list={featured} />
-      </section>
-
-      <section className="customer-container neighborhood-callout">
-        <div className="neighborhood-callout-icon"><MapPin size={22} /></div>
-        <div><h2>Önce mahalleni seç</h2><p>Restoranları teslimat adresine göre sıralayalım. Her restoranın hizmet verdiği bölgeler farklı olabilir.</p></div>
-        <a href="#" className="customer-button customer-button-outline" onClick={(event) => {
-          event.preventDefault();
-          window.dispatchEvent(new CustomEvent("doybi:open-address"));
-        }}>Adres seç <ArrowRight size={16} /></a>
-      </section>
-    </>
+      </div>
+      <div className="customer-container welcome-bottom">
+        <DemoNotice>Restoranlar yalnızca giriş sonrasında veya açıkça belirtilmiş demo önizlemede gösterilir.</DemoNotice>
+      </div>
+    </section>
   );
 }
 
@@ -192,6 +167,25 @@ export function RestaurantsPage({ query = "", category = "" }: { query?: string;
     setOnlyEligible(false);
     setMinimum(1000);
   };
+
+  if (!address) {
+    return (
+      <section className="customer-container address-first-page">
+        <span className="customer-modal-icon"><MapPin size={21} /></span>
+        <span className="customer-kicker">Önce teslimat konumun</span>
+        <h1>Mahalleni seç, sana uygun restoranları bulalım.</h1>
+        <p>Tekirdağ / Süleymanpaşa demo bölgesinde adresini belirle. Restoranlar yalnızca kendi teslimat alanlarına göre listelenir.</p>
+        <button
+          className="customer-button customer-button-primary"
+          onClick={() => window.dispatchEvent(new CustomEvent("doybi:open-address"))}
+          type="button"
+        >
+          Teslimat adresi seç <MapPin size={16} />
+        </button>
+        <DemoNotice>Demo önizleme · Adresin yalnızca bu tarayıcıda saklanır.</DemoNotice>
+      </section>
+    );
+  }
 
   return (
     <section className="customer-container customer-listing-page">
@@ -505,18 +499,38 @@ const registerSchema = z.object({
   password: z.string().min(8, "Şifre en az 8 karakter olmalı").regex(/[A-Za-z]/, "En az bir harf kullan").regex(/\d/, "En az bir rakam kullan"),
   passwordRepeat: z.string().min(1, "Şifreni tekrar gir"),
   kvkk: z.boolean().refine(Boolean, "Devam etmek için aydınlatma metnini onaylamalısın"),
+  marketingConsent: z.boolean(),
 }).refine((value) => value.password === value.passwordRepeat, { message: "Şifreler eşleşmiyor", path: ["passwordRepeat"] });
 
 type SignInValues = z.infer<typeof signInSchema>;
 type RegisterValues = z.infer<typeof registerSchema>;
 
 export function SignInPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
   const form = useForm<SignInValues>({ resolver: zodResolver(signInSchema), defaultValues: { identity: "", password: "" } });
-  const submit = form.handleSubmit(() => {
-    setMessage("Demo sürümünde giriş servisi bağlı değil. Bilgilerin gönderilmedi ve saklanmadı.");
+  const submit = form.handleSubmit(async (values) => {
+    setMessage("");
+    try {
+      const result = await customerAuthService.signIn(values);
+      if (result.status === "authenticated") {
+        router.replace("/restoranlar");
+      } else {
+        setMessage(result.message);
+      }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Giriş isteği tamamlanamadı.");
+    }
   });
+  const startDemoPreview = () => {
+    try {
+      enableDemoPreview();
+      router.push("/restoranlar");
+    } catch (error) {
+      setMessage(error instanceof Error ? `Demo önizleme başlatılamadı: ${error.message}` : "Demo önizleme başlatılamadı.");
+    }
+  };
 
   return (
     <section className="auth-page customer-container">
@@ -525,22 +539,28 @@ export function SignInPage() {
         <span className="customer-modal-icon"><span className="auth-icon-letter">d.</span></span>
         <span className="customer-kicker">Tekrar hoş geldin</span>
         <h1>Giriş yap</h1>
-        <p className="auth-subtitle">Hesabına erişmek için bilgilerini gir.</p>
+        <p className="auth-subtitle">Hesabına erişmek için bilgilerini gir. Giriş servisi şu anda kullanılamıyor.</p>
         <form className="customer-form" onSubmit={submit} noValidate>
           <label>E-posta veya telefon
             <input autoComplete="username" placeholder="ornek@mail.com veya 05xx..." {...form.register("identity")} />
             {form.formState.errors.identity && <span className="field-error">{form.formState.errors.identity.message}</span>}
           </label>
           <label>Şifre
-            <span className="password-input"><input autoComplete="current-password" type={showPassword ? "text" : "password"} placeholder="En az 8 karakter" {...form.register("password")} /><button onClick={() => setShowPassword(!showPassword)} type="button">{showPassword ? "Gizle" : "Göster"}</button></span>
+            <span className="password-input"><input autoComplete="current-password" type={showPassword ? "text" : "password"} placeholder="En az 8 karakter" {...form.register("password")} /><button aria-label={showPassword ? "Şifreyi gizle" : "Şifreyi göster"} onClick={() => setShowPassword(!showPassword)} type="button">{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}</button></span>
             {form.formState.errors.password && <span className="field-error">{form.formState.errors.password.message}</span>}
           </label>
           <div className="auth-forgot"><button onClick={() => setMessage("Şifre yenileme servisi demo sürümünde kullanılmıyor.")} type="button">Şifremi unuttum</button></div>
-          <button className="customer-button customer-button-primary customer-button-wide" disabled={form.formState.isSubmitting} type="submit">Giriş yap <ArrowRight size={16} /></button>
+          <button className="customer-button customer-button-primary customer-button-wide" disabled={form.formState.isSubmitting} type="submit">{form.formState.isSubmitting ? "Kontrol ediliyor…" : "Giriş yap"} <ArrowRight size={16} /></button>
         </form>
-        {message && <div className="auth-demo-message"><Info size={17} /><span>{message}</span></div>}
+        {message && <div className="auth-demo-message" role="alert"><Info size={17} /><span>{message}</span></div>}
+        <div className="demo-preview-entry">
+          <span className="customer-kicker">Henüz hesap açmadın mı?</span>
+          <p>Örnek restoranları ve sipariş akışını gerçek giriş yapmadan incele.</p>
+          <button className="customer-button customer-button-outline customer-button-wide" onClick={startDemoPreview} type="button">Demo önizlemesini başlat <ArrowRight size={16} /></button>
+          <small>Demo modu gerçek kullanıcı oturumu oluşturmaz.</small>
+        </div>
         <p className="auth-switch">Henüz hesabın yok mu? <Link href="/kayit">Kayıt ol</Link></p>
-        <DemoNotice>Demo formu · Gerçek kimlik doğrulama yapılmaz.</DemoNotice>
+        <DemoNotice>Giriş formu hazır; backend authentication henüz bağlı değil.</DemoNotice>
       </div>
     </section>
   );
@@ -551,10 +571,26 @@ export function RegisterPage() {
   const [message, setMessage] = useState("");
   const form = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { firstName: "", lastName: "", phone: "", email: "", password: "", passwordRepeat: "", kvkk: false },
+    defaultValues: { firstName: "", lastName: "", phone: "", email: "", password: "", passwordRepeat: "", kvkk: false, marketingConsent: false },
   });
-  const submit = form.handleSubmit(() => {
-    setMessage("Kayıt servisi henüz bağlı değil. Bilgilerin gönderilmedi veya saklanmadı; gerçek hesap oluşturulmadı.");
+  const submit = form.handleSubmit(async (values) => {
+    setMessage("");
+    try {
+      const result = await customerAuthService.signUp({
+        firstName: values.firstName,
+        lastName: values.lastName,
+        phone: values.phone.replace(/[\s()-]/g, ""),
+        email: values.email,
+        password: values.password,
+      });
+      if (result.status === "registered") {
+        setMessage("Kayıt tamamlandı. Giriş yaparak devam edebilirsin.");
+      } else {
+        setMessage(result.message);
+      }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Kayıt isteği tamamlanamadı.");
+    }
   });
 
   return (
@@ -564,7 +600,7 @@ export function RegisterPage() {
         <span className="customer-modal-icon"><span className="auth-icon-letter">d.</span></span>
         <span className="customer-kicker">DOYBİ ailesine katıl</span>
         <h1>Hesap oluştur</h1>
-        <p className="auth-subtitle">Demo formunu doldur; bilgiler hiçbir yere gönderilmez.</p>
+        <p className="auth-subtitle">Bilgilerini doğrula. Backend kayıt servisi henüz bağlı değil; form gönderilmez.</p>
         <form className="customer-form" onSubmit={submit} noValidate>
           <div className="customer-form-grid">
             <label>Ad<input autoComplete="given-name" {...form.register("firstName")} />{form.formState.errors.firstName && <span className="field-error">{form.formState.errors.firstName.message}</span>}</label>
@@ -573,20 +609,21 @@ export function RegisterPage() {
           <label>Telefon<input autoComplete="tel" inputMode="tel" placeholder="05xx xxx xx xx" {...form.register("phone")} />{form.formState.errors.phone && <span className="field-error">{form.formState.errors.phone.message}</span>}</label>
           <label>E-posta<input autoComplete="email" inputMode="email" placeholder="ornek@mail.com" {...form.register("email")} />{form.formState.errors.email && <span className="field-error">{form.formState.errors.email.message}</span>}</label>
           <div className="customer-form-grid">
-            <label>Şifre<span className="password-input"><input autoComplete="new-password" type={showPassword ? "text" : "password"} {...form.register("password")} /><button onClick={() => setShowPassword(!showPassword)} type="button">{showPassword ? "Gizle" : "Göster"}</button></span>{form.formState.errors.password && <span className="field-error">{form.formState.errors.password.message}</span>}</label>
+            <label>Şifre<span className="password-input"><input autoComplete="new-password" type={showPassword ? "text" : "password"} {...form.register("password")} /><button aria-label={showPassword ? "Şifreyi gizle" : "Şifreyi göster"} onClick={() => setShowPassword(!showPassword)} type="button">{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}</button></span>{form.formState.errors.password && <span className="field-error">{form.formState.errors.password.message}</span>}</label>
             <label>Şifre tekrar<input autoComplete="new-password" type={showPassword ? "text" : "password"} {...form.register("passwordRepeat")} />{form.formState.errors.passwordRepeat && <span className="field-error">{form.formState.errors.passwordRepeat.message}</span>}</label>
           </div>
           <details className="kvkk-details" id="kvkk">
             <summary>KVKK Aydınlatma Metni özeti</summary>
-            <p>Bu demo formunda kişisel verilerin işlenmesi veya gönderilmesi yapılmaz. Gerçek kayıt sistemi ve aydınlatma metni backend devreye alınmadan önce hazırlanacaktır.</p>
+            <p>Bu önizlemede kişisel bilgiler sunucuya gönderilmez veya kaydedilmez. Gerçek kayıt öncesinde veri sorumlusu, işleme amaçları, hukuki sebepler, saklama süresi ve ilgili kişi haklarını içeren aydınlatma metni yayımlanmalıdır. Bu özet resmi hukuki metin değildir.</p>
           </details>
-          <label className="consent-check"><input type="checkbox" {...form.register("kvkk")} /><span>Demo KVKK bilgilendirmesini okudum.</span></label>
+          <label className="consent-check"><input type="checkbox" {...form.register("kvkk")} /><span>Aydınlatma metni önizlemesini okudum.</span></label>
           {form.formState.errors.kvkk && <span className="field-error">{form.formState.errors.kvkk.message}</span>}
-          <button className="customer-button customer-button-primary customer-button-wide" type="submit">Demo formunu doğrula <ArrowRight size={16} /></button>
+          <label className="consent-check"><input type="checkbox" {...form.register("marketingConsent")} /><span>Kampanya ve duyurular hakkında bilgilendirilmek istiyorum. (İsteğe bağlı)</span></label>
+          <button className="customer-button customer-button-primary customer-button-wide" disabled={form.formState.isSubmitting} type="submit">{form.formState.isSubmitting ? "Doğrulanıyor…" : "Bilgileri doğrula"} <ArrowRight size={16} /></button>
         </form>
-        {message && <div className="auth-demo-message"><Info size={17} /><span>{message}</span></div>}
+        {message && <div className="auth-demo-message" role="alert"><Info size={17} /><span>{message}</span></div>}
         <p className="auth-switch">Zaten hesabın var mı? <Link href="/giris">Giriş yap</Link></p>
-        <DemoNotice>Gerçek kullanıcı hesabı oluşturulmaz.</DemoNotice>
+        <DemoNotice>Form geçerliliği kontrol edilir; henüz kayıt işlemi yapılmaz ve bilgiler gönderilmez.</DemoNotice>
       </div>
     </section>
   );
